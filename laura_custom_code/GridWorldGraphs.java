@@ -21,6 +21,7 @@ import burlap.behavior.singleagent.planning.deterministic.informed.astar.AStar;
 import burlap.behavior.singleagent.planning.deterministic.uninformed.bfs.BFS;
 import burlap.behavior.singleagent.planning.deterministic.uninformed.dfs.DFS;
 import burlap.behavior.singleagent.planning.stochastic.valueiteration.ValueIteration;
+import burlap.behavior.singleagent.planning.stochastic.policyiteration.PolicyIteration;
 
 //Line visualization
 import burlap.oomdp.singleagent.common.VisualActionObserver;
@@ -54,8 +55,9 @@ public class GridWorldGraphs {
     DiscreteStateHashFactory    hashingFactory;
 
     public GridWorldGraphs() {
-        gwdg = new GridWorldDomain(10,10);
-        gwdg.setMapToFourRooms();
+        gwdg = new GridWorldDomain(10,10); //10x10 grid world
+        gwdg.setMapToFourRooms(); //four rooms layout
+        gwdg.setProbSucceedTransitionDynamics(0.8); //Stochastic transitions have an 0.8 success rate
         domain = gwdg.generateDomain();
 
         //create the state parser
@@ -90,16 +92,17 @@ public class GridWorldGraphs {
     //Hook up the class constructor and visualizer method to the main class
     public static void main(String[] args) {
         GridWorldGraphs example = new GridWorldGraphs();
-        String outputPath = "../../results/grid-world"; //directory to record results
+        String outputPath = "../../../results/grid-world"; //directory to record results
 
         //call the planning and learning algorithms here
-        example.BFSExample(outputPath);
-        example.DFSExample(outputPath);
-        example.AStarExample(outputPath);
+        //example.BFSExample(outputPath);
+        //example.DFSExample(outputPath);
+        //example.AStarExample(outputPath);
         example.ValueIterationExample(outputPath);
-        example.QLearningExample(outputPath);
-        example.SarsaLearningExample(outputPath);
-        example.experimenterAndPlotter();
+        //example.PolicyIterationExample(outputPath);
+        //example.QLearningExample(outputPath);
+        //example.SarsaLearningExample(outputPath);
+        //example.experimenterAndPlotter();
 
         //run the visualizer
         //example.visualize(outputPath);
@@ -204,6 +207,27 @@ public class GridWorldGraphs {
 
         //record the plan results to a file
         p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "ValueIteration-results", sp);
+
+        //visualize the value function and policy
+        this.valueFunctionVisualize((QComputablePlanner)planner, p);
+
+    }
+
+    //Policy Iteration
+    public void PolicyIterationExample(String outputPath){
+        if(!outputPath.endsWith("/")){
+            outputPath = outputPath + "/";
+        }
+
+        //Parameters: Domain domain, RewardFunction rf, TerminalFunction tf, double gamma, StateHashFactory hashingFactory, double maxDelta, int maxEvaluationIterations, int maxPolicyIterations)
+        OOMDPPlanner planner = new PolicyIteration(domain, rf, tf, 0.99, hashingFactory, 0.001, 100, 100);
+        planner.planFromState(initialState);
+
+        //create a Q-greedy policy from the planner
+        Policy p = new GreedyQPolicy((QComputablePlanner)planner);
+
+        //record the plan results to a file
+        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "PolicyIteration-results", sp);
 
         //visualize the value function and policy
         this.valueFunctionVisualize((QComputablePlanner)planner, p);
