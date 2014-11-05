@@ -17,7 +17,7 @@ import burlap.behavior.singleagent.planning.*;
 import burlap.behavior.singleagent.planning.commonpolicies.GreedyQPolicy;
 import burlap.behavior.singleagent.planning.deterministic.*;
 import burlap.behavior.singleagent.planning.deterministic.informed.Heuristic;
-import burlap.behavior.singleagent.planning.deterministic.informed.astar.Astar;
+import burlap.behavior.singleagent.planning.deterministic.informed.astar.AStar;
 import burlap.behavior.singleagent.planning.deterministic.uninformed.bfs.BFS;
 import burlap.behavior.singleagent.planning.deterministic.uninformed.dfs.DFS;
 import burlap.behavior.singleagent.planning.stochastic.valueiteration.ValueIteration;
@@ -30,10 +30,13 @@ import java.awt.Color;
 import java.util.List;
 import burlap.behavior.singleagent.auxiliary.StateReachability;
 import burlap.behavior.singleagent.auxiliary.valuefunctionvis.ValueFunctionVisualizerGUI;
+import burlap.behavior.singleagent.auxiliary.valuefunctionvis.common.*;
+import burlap.behavior.singleagent.auxiliary.valuefunctionvis.common.PolicyGlyphPainter2D.PolicyGlyphRenderStyle;
 import burlap.behavior.singleagent.auxiliary.valuefunctionvis.common.ArrowActionGlyph;
 
 //Experimenter tools and performance plotting
 import burlap.oomdp.auxiliary.StateGenerator;
+import burlap.oomdp.auxiliary.StateParser;
 import burlap.oomdp.auxiliary.common.ConstantStateGenerator;
 import burlap.behavior.singleagent.auxiliary.performance.LearningAlgorithmExperimenter;
 import burlap.behavior.singleagent.auxiliary.performance.PerformanceMetric;
@@ -50,10 +53,6 @@ public class GridWorldGraphs {
     State			initialState;
     DiscreteStateHashFactory    hashingFactory;
 
-    public static void main(String[] args) {
-
-    }
-
     public GridWorldGraphs() {
         gwdg = new GridWorldDomain(10,10);
         gwdg.setMapToFourRooms();
@@ -64,7 +63,7 @@ public class GridWorldGraphs {
 
         //define the task
         rf = new UniformCostRF();
-        tf = newSinglePFTF(domain.getPropFunction(GridWorldDomain.PFATLOCATION));
+        tf = new SinglePFTF(domain.getPropFunction(GridWorldDomain.PFATLOCATION));
         goalCondition = new TFGoalCondition(tf);
 
         //set up the initial state of the task
@@ -78,7 +77,7 @@ public class GridWorldGraphs {
 
         //add visual observer
         VisualActionObserver observer = new VisualActionObserver(domain, GridWorldVisualizer.getVisualizer(gwdg.getMap()));
-        ((SADomain).this.domain).setActionObserverForAllAction(observer);
+        ((SADomain)this.domain).setActionObserverForAllAction(observer);
         observer.initGUI();
 
     }
@@ -90,7 +89,7 @@ public class GridWorldGraphs {
 
     //Hook up the class constructor and visualizer method to the main class
     public static void main(String[] args) {
-        BasicBehavior example = new BasicBehavior();
+        GridWorldGraphs example = new GridWorldGraphs();
         String outputPath = "output/"; //directory to record results
 
         //call the planning and learning algorithms here
@@ -190,14 +189,14 @@ public class GridWorldGraphs {
             outputPath = outputPath + "/";
         }
 
-        OMDPPlanner planner = new ValueIteration(domain, rf, tf, 0.99, hashingFactory, 0.001, 100);
+        OOMDPPlanner planner = new ValueIteration(domain, rf, tf, 0.99, hashingFactory, 0.001, 100);
         planner.planFromState(initialState);
 
         //create a Q-greedy policy from the planner
         Policy p = new GreedyQPolicy((QComputablePlanner)planner);
 
         //record the plan results to a file
-        p.evaluateBehavior(initialState, rf, tf.writeToFile(outputPath + "planResult", sp);
+        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "planResult", sp);
 
         //visualize the value function and policy
         this.valueFunctionVisualize((QComputablePlanner)planner, p);
@@ -244,8 +243,8 @@ public class GridWorldGraphs {
 
     //Value function and policy visualization
     public void valueFunctionVisualize(QComputablePlanner planner, Policy p){
-        List <State> allStates = StateReachability.getReachableSttes(initialState, (SADomain)domain, hashingFactory);
-        LandmarkColorBlendInterpolation rb = newLandmarkColorBlendInterpolation();
+        List <State> allStates = StateReachability.getReachableStates(initialState, (SADomain)domain, hashingFactory);
+        LandmarkColorBlendInterpolation rb = new LandmarkColorBlendInterpolation();
         rb.addNextLandMark(0., Color.RED);
         rb.addNextLandMark(1., Color.BLUE);
 
@@ -254,7 +253,6 @@ public class GridWorldGraphs {
 
         PolicyGlyphPainter2D spp = new PolicyGlyphPainter2D();
         spp.setXYAttByObjectClass(GridWorldDomain.CLASSAGENT, GridWorldDomain.ATTX, GridWorldDomain.CLASSAGENT, GridWorldDomain.ATTY);
-        spp.setXYAttByObjectClass(GridWorldDomain.CLASSAGENT, GridWorldDomain.ATTY);
         spp.setActionNameGlyphPainter(GridWorldDomain.ACTIONNORTH, new ArrowActionGlyph(0));
         spp.setActionNameGlyphPainter(GridWorldDomain.ACTIONSOUTH, new ArrowActionGlyph(1));
         spp.setActionNameGlyphPainter(GridWorldDomain.ACTIONEAST, new ArrowActionGlyph(2));
@@ -275,51 +273,50 @@ public class GridWorldGraphs {
         //custom reward function for more interesting results
         final RewardFunction rf = new GoalBasedRF(this.goalCondition, 5., -0.1);
 
+        //Create factories for Q-learning agent and SARSA agent to compare
+        LearningAgentFactory qLearningFactory = new LearningAgentFactory() {
+    
+            @Override
+            public String getAgentName() {
+                return "Q-learning";
+            }
+    
+            @Override
+            public LearningAgent generateAgent() {
+                return new QLearning(domain, rf, tf, 0.99, hashingFactory, 0.3, 0.1);
+            }
+        };
+
+        LearningAgentFactory sarsaLearningFactory = new LearningAgentFactory() {
+
+            @Override
+            public String getAgentName() {
+                return "SARSA";
+            }
+
+            @Override
+            public LearningAgent generateAgent() {
+                return new SarsaLam(domain, rf, tf, 0.99, hashingFactory, 0.0, 0.1, 1.);
+            }
+        };
+
+        //Make a state generator that always returns the same initial state
+        //Using the BURLAP-provided ConstantStateGenerator
+        StateGenerator sg = new ConstantStateGenerator(this.initialState);
+
+        //Create our experimenter, start it, and save all the data for all six metrics to CSV files.
+        LearningAlgorithmExperimenter exp = new LearningAlgorithmExperimenter((SADomain)this.domain, rf, sg, 10, 1000, qLearningFactory, sarsaLearningFactory);
+
+        exp.setUpPlottingConfiguration(500, 250, 2, 1000,
+            TrialMode.MOSTRECENTANDAVERAGE,
+            PerformanceMetric.CUMULATIVESTEPSPEREPISODE,
+            PerformanceMetric.AVERAGEEPISODEREWARD);
+
+        exp.startExperiment();
+
+        exp.writeStepAndEpisodeDataToCSV("expData");
+
     }
-
-    //Create factories for Q-learning agent and SARSA agent to compare
-    LearningAgentFactory qLearningFactory = new LearningAgentFactory() {
-
-        @Override
-        public String getAgentName() {
-            return "Q-learning";
-        }
-
-        @Override
-        public LearningAgent generateAgent() {
-            return new QLearning(domain, rf, tf, 0.99, hashingFactory, 0.3, 0.1);
-        }
-    };
-
-    LearningAgentFactory sarsaLearningFactory = new LearningAgentFactory() {
-
-        @Override
-        public String getAgentName() {
-            return "SARSA";
-        }
-
-        @Override
-        public LearningAgent generateAgent() {
-            return new SarsaLam(domain, rf, tf, 0.99, hashingFactory, 0.0, 0.1, 1.);
-        }
-    };
-
-    //Make a state generator that always returns the same initial state
-    //Using the BURLAP-provided ConstantStateGenerator
-    StateGenerator sg = new ConstantStateGenerator(this.initialState);
-
-    //Create our experimenter, start it, and save all the data for all six metrics to CSV files.
-    LearningAlgorithmExperimenter exp = new LearningAlgorithmExperimenter(this.domain, rf, sg, 10, 1000, qLearningFactory, sarsaLearningFactory);
-
-    exp.setUpPlottingConfiguration(500, 250, 2, 1000),
-        TrialMode.MOSTRECENTANDAVERAGE,
-        PerformanceMetric.CUMULATIVESTEPSPEREPISODE,
-        PerformanceMetric.AVERAGEEPISODEREWARD);
-
-    exp.startExperiment();
-
-    exp.writeStepAndEpisodeDataToCSV("expData");
-
 
 }
 
