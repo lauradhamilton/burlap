@@ -95,10 +95,12 @@ public class GridWorldGraphs {
         String outputPath = "../../../results/grid-world"; //directory to record results
 
         //call the planning and learning algorithms here
+        //Uncomment which ever one(s) you want to run
         //example.BFSExample(outputPath);
         //example.DFSExample(outputPath);
         //example.AStarExample(outputPath);
-        example.ValueIterationExample(outputPath);
+        //example.ValueIterationExample(outputPath);
+        example.ValueIterationTrialRunner();
         //example.PolicyIterationExample(outputPath);
         //example.QLearningExample(outputPath);
         //example.SarsaLearningExample(outputPath);
@@ -347,6 +349,10 @@ public class GridWorldGraphs {
 
         exp.writeStepAndEpisodeDataToCSV("expData");
 
+    }
+
+    public void ValueIterationTrialRunner(){
+        ValueIterationExample("../../../results/grid-world");
     }
 
 }
