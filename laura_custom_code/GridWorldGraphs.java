@@ -99,8 +99,7 @@ public class GridWorldGraphs {
         //example.BFSExample(outputPath);
         //example.DFSExample(outputPath);
         //example.AStarExample(outputPath);
-        //example.ValueIterationExample(outputPath);
-        example.ValueIterationTrialRunner();
+        example.ValueIterationExample(outputPath);
         //example.PolicyIterationExample(outputPath);
         //example.QLearningExample(outputPath);
         //example.SarsaLearningExample(outputPath);
@@ -201,8 +200,16 @@ public class GridWorldGraphs {
             outputPath = outputPath + "/";
         }
 
+        //Time how long this takes
+        long startTime = System.nanoTime();
+
         OOMDPPlanner planner = new ValueIteration(domain, rf, tf, 0.99, hashingFactory, 0.001, 100);
         planner.planFromState(initialState);
+
+        long elapsedTime = System.nanoTime() - startTime;
+        double elapsedTimeSeconds = elapsedTime/1000000000.0;
+
+        System.out.println("Value Iteration Running Time: " + elapsedTimeSeconds + " seconds");
 
         //create a Q-greedy policy from the planner
         Policy p = new GreedyQPolicy((QComputablePlanner)planner);
@@ -349,10 +356,6 @@ public class GridWorldGraphs {
 
         exp.writeStepAndEpisodeDataToCSV("expData");
 
-    }
-
-    public void ValueIterationTrialRunner(){
-        ValueIterationExample("../../../results/grid-world");
     }
 
 }
