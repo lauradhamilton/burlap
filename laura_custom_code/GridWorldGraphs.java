@@ -55,7 +55,9 @@ public class GridWorldGraphs {
     DiscreteStateHashFactory    hashingFactory;
 
     public GridWorldGraphs() {
-        gwdg = new GridWorldDomain(10,10); //10x10 grid world
+        int n = 10; //Define the length of a size in the grid
+        gwdg = new GridWorldDomain(n, n); //nxn grid world
+        System.out.println("Initializing an " + n + "x" + n + " world...");
         gwdg.setMapToFourRooms(); //four rooms layout
         gwdg.setProbSucceedTransitionDynamics(0.8); //Stochastic transitions have an 0.8 success rate
         domain = gwdg.generateDomain();
@@ -208,8 +210,9 @@ public class GridWorldGraphs {
 
         long elapsedTime = System.nanoTime() - startTime;
         double elapsedTimeSeconds = elapsedTime/1000000000.0;
+        double elapsedTimeSecondsRounded = (double)Math.round(elapsedTimeSeconds * 1000) / 1000;
 
-        System.out.println("Value Iteration Running Time: " + elapsedTimeSeconds + " seconds");
+        System.out.println("Value Iteration Running Time: " + elapsedTimeSecondsRounded + " seconds");
 
         //create a Q-greedy policy from the planner
         Policy p = new GreedyQPolicy((QComputablePlanner)planner);
