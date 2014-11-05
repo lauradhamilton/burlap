@@ -90,13 +90,19 @@ public class GridWorldGraphs {
     //Hook up the class constructor and visualizer method to the main class
     public static void main(String[] args) {
         GridWorldGraphs example = new GridWorldGraphs();
-        String outputPath = "output/"; //directory to record results
+        String outputPath = "../../results/grid-world"; //directory to record results
 
         //call the planning and learning algorithms here
         example.BFSExample(outputPath);
+        example.DFSExample(outputPath);
+        example.AStarExample(outputPath);
+        example.ValueIterationExample(outputPath);
+        example.QLearningExample(outputPath);
+        example.SarsaLearningExample(outputPath);
+        example.experimenterAndPlotter();
 
         //run the visualizer
-        example.visualize(outputPath);
+        //example.visualize(outputPath);
 
         
     }
@@ -116,7 +122,7 @@ public class GridWorldGraphs {
         Policy p = new SDPlannerPolicy(planner);
 
         //record the plan results to a file
-        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "planResult", sp);
+        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "BFS-results", sp);
 
     }
 
@@ -128,12 +134,13 @@ public class GridWorldGraphs {
 
         //DFS ignores reward. It just searches for a goal-condition-satisfying-state.
         DeterministicPlanner planner = new DFS(domain, goalCondition, hashingFactory);
+        planner.planFromState(initialState);
 
         //capture the computed plan in a partial policy
         Policy p = new SDPlannerPolicy(planner);
 
         //record the plan results to a file
-        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "planResult", sp);
+        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "DFS-results", sp);
 
     }
 
@@ -179,7 +186,7 @@ public class GridWorldGraphs {
         Policy p = new SDPlannerPolicy(planner);
 
         //record the plan results to a file
-        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "planResult", sp);
+        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "AStar-results", sp);
 
     }
 
@@ -196,7 +203,7 @@ public class GridWorldGraphs {
         Policy p = new GreedyQPolicy((QComputablePlanner)planner);
 
         //record the plan results to a file
-        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "planResult", sp);
+        p.evaluateBehavior(initialState, rf, tf).writeToFile(outputPath + "ValueIteration-results", sp);
 
         //visualize the value function and policy
         this.valueFunctionVisualize((QComputablePlanner)planner, p);
