@@ -51,7 +51,8 @@ public class GridWorldQLearningPlot{
         };
 
         //define experiment
-        LearningAlgorithmExperimenter exp = new LearningAlgorithmExperimenter((SADomain)domain, rf, sg, 10, 100, qLearningFactory);
+        //LearningAlgorithmExperimenter(SADomain domain, RewardFunction rf, StateGenerator sg, int nTrials, int trialLength, LearningAgentFactory... agentFactories)
+        LearningAlgorithmExperimenter exp = new LearningAlgorithmExperimenter((SADomain)domain, rf, sg, 10, 1000, qLearningFactory);
 
         exp.setUpPlottingConfiguration(500, 250, 2, 1000, TrialMode.MOSTRECENTANDAVERAGE, PerformanceMetric.CUMULATIVESTEPSPEREPISODE, PerformanceMetric.AVERAGEEPISODEREWARD);
 
