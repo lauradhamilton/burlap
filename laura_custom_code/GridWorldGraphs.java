@@ -46,6 +46,9 @@ import burlap.behavior.singleagent.auxiliary.performance.TrialMode;
 //Different exploration strategy for Q-learning
 import burlap.behavior.singleagent.planning.commonpolicies.BoltzmannQPolicy;
 import burlap.behavior.singleagent.learning.tdmethods.QLearning;
+import burlap.behavior.singleagent.learnbydemo.apprenticeship.ApprenticeshipLearning.RandomPolicy;
+import burlap.behavior.singleagent.planning.commonpolicies.GreedyDeterministicQPolicy;
+import burlap.behavior.singleagent.planning.commonpolicies.EpsilonGreedy;
 
 public class GridWorldGraphs {
 
@@ -107,8 +110,7 @@ public class GridWorldGraphs {
         //example.PolicyIterationExample(outputPath);
         //example.QLearningExample(outputPath);
         //example.SarsaLearningExample(outputPath);
-        //example.experimenterAndPlotter();
-        example.qLearningCompareExplorationStrategies();
+        example.experimenterAndPlotter();
 
         //run the visualizer
         //example.visualize(outputPath);
@@ -375,64 +377,6 @@ public class GridWorldGraphs {
         exp.writeStepAndEpisodeDataToCSV("expData");
 
     }
-
-    //Test the experimenter tools
-    public void qLearningCompareExplorationStrategies(){
-
-        //custom reward function for more interesting results
-        final RewardFunction rf = new GoalBasedRF(this.goalCondition, 5., -0.1);
-
-        //Create factories for Q-learning agent and SARSA agent to compare
-        LearningAgentFactory qLearningFactory = new LearningAgentFactory() {
-    
-            @Override
-            public String getAgentName() {
-                return "Q-learning ε-greedy";
-            }
-    
-            @Override
-            //public QLearning(Domain domain, RewardFunction rf, TerminalFunction tf, double gamma, StateHashFactory hashingFactory, double qInit, double learningRate)
-            public LearningAgent generateAgent() {
-                return new QLearning(domain, rf, tf, 0.99, hashingFactory, 0.3, 0.1);
-            }
-        };
-
-        LearningAgentFactory sarsaLearningFactory = new LearningAgentFactory() {
-
-            @Override
-            public String getAgentName() {
-                return "Q-learning Boltzmann Q Policy";
-            }
-
-            double temp = 100;
-            Policy BoltzmannQPolicy = new BoltzmannQPolicy(temp);
-
-            @Override
-            public LearningAgent generateAgent() {
-                QLearning q1 = new QLearning(domain, rf, tf, 0.99, hashingFactory, 0.3, 0.1);
-                q1.setLearningPolicy(BoltzmannQPolicy);
-                return q1;
-            }
-        };
-
-        //Make a state generator that always returns the same initial state
-        //Using the BURLAP-provided ConstantStateGenerator
-        StateGenerator sg = new ConstantStateGenerator(this.initialState);
-
-        //Create our experimenter, start it, and save all the data for all six metrics to CSV files.
-        LearningAlgorithmExperimenter exp = new LearningAlgorithmExperimenter((SADomain)this.domain, rf, sg, 10, 1000, qLearningFactory, sarsaLearningFactory);
-
-        exp.setUpPlottingConfiguration(500, 250, 2, 1000,
-            TrialMode.MOSTRECENTANDAVERAGE,
-            PerformanceMetric.CUMULATIVESTEPSPEREPISODE,
-            PerformanceMetric.AVERAGEEPISODEREWARD);
-
-        exp.startExperiment();
-
-        exp.writeStepAndEpisodeDataToCSV("expData");
-
-    }
-
 }
 
 
