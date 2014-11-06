@@ -7,7 +7,7 @@ public class HelloGridWorld{
 
     public static void main(String [] args){
 
-        GridWorldDomain gw = new GridWorldDomain(10,10); //10x10 grid world
+        GridWorldDomain gw = new GridWorldDomain(11,11); //Set grid world size
         gw.setMapToFourRooms(); //four rooms layout
         gw.setProbSucceedTransitionDynamics(0.8); //Stochastic transitions have an 0.8 success rate
         Domain domain = gw.generateDomain(); //generate the grid world domain

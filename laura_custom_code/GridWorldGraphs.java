@@ -43,6 +43,10 @@ import burlap.behavior.singleagent.auxiliary.performance.LearningAlgorithmExperi
 import burlap.behavior.singleagent.auxiliary.performance.PerformanceMetric;
 import burlap.behavior.singleagent.auxiliary.performance.TrialMode;
 
+//Different exploration strategy for Q-learning
+import burlap.behavior.singleagent.planning.commonpolicies.BoltzmannQPolicy;
+import burlap.behavior.singleagent.learning.tdmethods.QLearning;
+
 public class GridWorldGraphs {
 
     GridWorldDomain		gwdg;
@@ -55,9 +59,7 @@ public class GridWorldGraphs {
     DiscreteStateHashFactory    hashingFactory;
 
     public GridWorldGraphs() {
-        int n = 10; //Define the length of a size in the grid
-        gwdg = new GridWorldDomain(n, n); //nxn grid world
-        System.out.println("Initializing an " + n + "x" + n + " world...");
+        gwdg = new GridWorldDomain(11, 11); //Must be 11x11 for four rooms layout
         gwdg.setMapToFourRooms(); //four rooms layout
         gwdg.setProbSucceedTransitionDynamics(0.8); //Stochastic transitions have an 0.8 success rate
         domain = gwdg.generateDomain();
@@ -101,11 +103,12 @@ public class GridWorldGraphs {
         //example.BFSExample(outputPath);
         //example.DFSExample(outputPath);
         //example.AStarExample(outputPath);
-        example.ValueIterationExample(outputPath);
+        //example.ValueIterationExample(outputPath);
         //example.PolicyIterationExample(outputPath);
         //example.QLearningExample(outputPath);
         //example.SarsaLearningExample(outputPath);
         //example.experimenterAndPlotter();
+        example.qLearningCompareExplorationStrategies();
 
         //run the visualizer
         //example.visualize(outputPath);
@@ -205,7 +208,10 @@ public class GridWorldGraphs {
         //Time how long this takes
         long startTime = System.nanoTime();
 
-        OOMDPPlanner planner = new ValueIteration(domain, rf, tf, 0.99, hashingFactory, 0.001, 100);
+        double gamma = .99;
+
+        System.out.println("Gamma: " + gamma);
+        OOMDPPlanner planner = new ValueIteration(domain, rf, tf, gamma, hashingFactory, 0.001, 100);
         planner.planFromState(initialState);
 
         long elapsedTime = System.nanoTime() - startTime;
@@ -231,9 +237,18 @@ public class GridWorldGraphs {
             outputPath = outputPath + "/";
         }
 
+        //Time how long this takes
+        long startTime = System.nanoTime();
+
         //Parameters: Domain domain, RewardFunction rf, TerminalFunction tf, double gamma, StateHashFactory hashingFactory, double maxDelta, int maxEvaluationIterations, int maxPolicyIterations)
-        OOMDPPlanner planner = new PolicyIteration(domain, rf, tf, 0.99, hashingFactory, 0.001, 100, 100);
+        OOMDPPlanner planner = new PolicyIteration(domain, rf, tf, 0.99, hashingFactory, 0.001, 1000, 1000);
         planner.planFromState(initialState);
+
+        long elapsedTime = System.nanoTime() - startTime;
+        double elapsedTimeSeconds = elapsedTime/1000000000.0;
+        double elapsedTimeSecondsRounded = (double)Math.round(elapsedTimeSeconds * 1000) / 1000;
+
+        System.out.println("Policy Iteration Running Time: " + elapsedTimeSecondsRounded + " seconds");
 
         //create a Q-greedy policy from the planner
         Policy p = new GreedyQPolicy((QComputablePlanner)planner);
@@ -340,6 +355,63 @@ public class GridWorldGraphs {
             @Override
             public LearningAgent generateAgent() {
                 return new SarsaLam(domain, rf, tf, 0.99, hashingFactory, 0.0, 0.1, 1.);
+            }
+        };
+
+        //Make a state generator that always returns the same initial state
+        //Using the BURLAP-provided ConstantStateGenerator
+        StateGenerator sg = new ConstantStateGenerator(this.initialState);
+
+        //Create our experimenter, start it, and save all the data for all six metrics to CSV files.
+        LearningAlgorithmExperimenter exp = new LearningAlgorithmExperimenter((SADomain)this.domain, rf, sg, 10, 1000, qLearningFactory, sarsaLearningFactory);
+
+        exp.setUpPlottingConfiguration(500, 250, 2, 1000,
+            TrialMode.MOSTRECENTANDAVERAGE,
+            PerformanceMetric.CUMULATIVESTEPSPEREPISODE,
+            PerformanceMetric.AVERAGEEPISODEREWARD);
+
+        exp.startExperiment();
+
+        exp.writeStepAndEpisodeDataToCSV("expData");
+
+    }
+
+    //Test the experimenter tools
+    public void qLearningCompareExplorationStrategies(){
+
+        //custom reward function for more interesting results
+        final RewardFunction rf = new GoalBasedRF(this.goalCondition, 5., -0.1);
+
+        //Create factories for Q-learning agent and SARSA agent to compare
+        LearningAgentFactory qLearningFactory = new LearningAgentFactory() {
+    
+            @Override
+            public String getAgentName() {
+                return "Q-learning ε-greedy";
+            }
+    
+            @Override
+            //public QLearning(Domain domain, RewardFunction rf, TerminalFunction tf, double gamma, StateHashFactory hashingFactory, double qInit, double learningRate)
+            public LearningAgent generateAgent() {
+                return new QLearning(domain, rf, tf, 0.99, hashingFactory, 0.3, 0.1);
+            }
+        };
+
+        LearningAgentFactory sarsaLearningFactory = new LearningAgentFactory() {
+
+            @Override
+            public String getAgentName() {
+                return "Q-learning Boltzmann Q Policy";
+            }
+
+            double temp = 100;
+            Policy BoltzmannQPolicy = new BoltzmannQPolicy(temp);
+
+            @Override
+            public LearningAgent generateAgent() {
+                QLearning q1 = new QLearning(domain, rf, tf, 0.99, hashingFactory, 0.3, 0.1);
+                q1.setLearningPolicy(BoltzmannQPolicy);
+                return q1;
             }
         };
 
