@@ -106,11 +106,11 @@ public class GridWorldGraphs {
         //example.BFSExample(outputPath);
         //example.DFSExample(outputPath);
         //example.AStarExample(outputPath);
-        //example.ValueIterationExample(outputPath);
+        example.ValueIterationExample(outputPath);
         //example.PolicyIterationExample(outputPath);
         //example.QLearningExample(outputPath);
         //example.SarsaLearningExample(outputPath);
-        example.experimenterAndPlotter();
+        //example.experimenterAndPlotter();
 
         //run the visualizer
         //example.visualize(outputPath);
@@ -210,7 +210,7 @@ public class GridWorldGraphs {
         //Time how long this takes
         long startTime = System.nanoTime();
 
-        double gamma = .99;
+        double gamma = 0.1;
 
         System.out.println("Gamma: " + gamma);
         OOMDPPlanner planner = new ValueIteration(domain, rf, tf, gamma, hashingFactory, 0.001, 100);

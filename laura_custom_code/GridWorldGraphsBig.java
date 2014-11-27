@@ -117,9 +117,9 @@ public class GridWorldGraphsBig {
         //example.BFSExample(outputPath);
         //example.DFSExample(outputPath);
         //example.AStarExample(outputPath);
-        example.ValueIterationExample(outputPath);
+        //example.ValueIterationExample(outputPath);
         //example.PolicyIterationExample(outputPath);
-        //example.QLearningExample(outputPath);
+        example.QLearningExample(outputPath);
         //example.SarsaLearningExample(outputPath);
         //example.experimenterAndPlotter();
 
@@ -221,7 +221,7 @@ public class GridWorldGraphsBig {
         //Time how long this takes
         long startTime = System.nanoTime();
 
-        double gamma = 1;
+        double gamma = 0.99;
 
         System.out.println("Gamma: " + gamma);
         OOMDPPlanner planner = new ValueIteration(domain, rf, tf, gamma, hashingFactory, 0.001, 1000);
@@ -282,7 +282,7 @@ public class GridWorldGraphsBig {
         }
 
         //creating the learning algorithm object; discount = 0.99; initialQ=0.0; learning rate=0.9
-        LearningAgent agent = new QLearning(domain, rf, tf, 0.99, hashingFactory, 0., 0.9);
+        LearningAgent agent = new QLearning(domain, rf, tf, 1, hashingFactory, 0., 0.9);
 
         //run learning for 100 episodes
         for(int i = 0; i < 100; i++){
